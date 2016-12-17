@@ -134,11 +134,13 @@ int main() {
         int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
         cout << "parent connected: " << ret << endl;
         send(sock, s.c_str(), strlen(s.c_str()), 0);
-        //close(sock);
+        close(sock);
 
         sem_wait(sem);
         cout << "parent is up to recieve" << endl;
       //  bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
         bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
         cout << "parent recieved " << bytes_read << endl;
         buf[bytes_read] = '\0';
@@ -183,9 +185,10 @@ int main() {
           //  printf("\nTotal %d bytes received\n", total);
             double res = calculate(buf);
             cout << "res: " << calculate(buf) << endl;
+            close(sock);
 
             sem_post(sem);
-
+            sock = socket(AF_INET, SOCK_DGRAM, 0);
             int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
             cout << "kid connected: " << ret << endl;
             const char *result = to_string(res).c_str();
