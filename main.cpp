@@ -114,6 +114,7 @@ int main() {
         printf("Parent proc...\n");
         //wait(&q); /* Ждать завершения потомков */
         sem_wait(sem);
+        char buf[BUFSIZE];
         double a, b;
         cout << "Input a: " << endl;
         cin >> a;
@@ -133,11 +134,15 @@ int main() {
         int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
         cout << "parent connected: " << ret << endl;
         send(sock, s.c_str(), strlen(s.c_str()), 0);
-        close(sock);
+        //close(sock);
 
         sem_wait(sem);
-
-        //recieve
+        cout << "parent is up to recieve" << endl;
+      //  bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+        bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
+        cout << "parent recieved " << bytes_read << endl;
+        buf[bytes_read] = '\0';
+        cout << "parent got result " << buf << endl;
 
       //  cout << "sqr(a) = " << result << endl;
 
@@ -170,14 +175,22 @@ int main() {
             //cout << "accepted: " << socket << endl;
             bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
             cout << "read: " << socket << endl;
-            total = total + bytes_read;
+         //   total = total + bytes_read;
             buf[bytes_read] = '\0';
            // fprintf(stdout, buf);fflush(stdout);
          //   if (total>BUFSIZE) break;
             cout << "buf: " << buf << endl;
-            printf("\nTotal %d bytes received\n", total);
+          //  printf("\nTotal %d bytes received\n", total);
+            double res = calculate(buf);
             cout << "res: " << calculate(buf) << endl;
+
             sem_post(sem);
+
+            int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+            cout << "kid connected: " << ret << endl;
+            const char *result = to_string(res).c_str();
+            ret = send(sock, result, strlen(result), 0);
+            cout << "kid sent result, " << ret << endl;
         }
         printf("Kid ends");
     }
