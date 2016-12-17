@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <sys/shm.h>
 #include <fcntl.h>
+#include <iostream>
+#include <cmath>
+
+using namespace std;
 
 pid_t p, q;
 
@@ -16,7 +20,41 @@ key_t shmkey;                 /*      shared memory key       */
 int shmid;                    /*      shared memory id        */
 sem_t *sem, *sem2;
 
+double calculate(char* par) {
+    string input = string(par);
+    char op = input[0];
+    int i = 2;
+    string s = "";
+    while (input[i] != ';') {
+        s += input[i];
+        i++;
+    }
+    double a = stod(s);
+    if (op == '+') {
+        s = "";
+        for (i++; input[i] != ';' && i < sizeof(input); i++) {
+            s += input[i];
+        }
+
+        double b = stod(s);
+        return a + b;
+    }
+    switch (op) {
+        case 's':
+            return a*a;
+        case 'r':
+            return sqrt(a);
+    }
+}
+
 int main() {
+    char *s = (char *) "+;121;-55.7";
+
+    printf("result %f\n", calculate(s));
+    return 0;
+}
+
+int main22() {
     char *e[]={"",""};
 
     /* initialize a shared variable in shared memory */
