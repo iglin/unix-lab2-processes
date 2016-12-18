@@ -18,6 +18,8 @@ using namespace std;
 #define BUFSIZE 256
 #define PORT 6969
 
+#define PAUSE 5
+
 pid_t p, q;
 
 sem_t empty, full;
@@ -95,7 +97,7 @@ int main() {
 
         string s = "s;" + to_string(a);
         sem_post(sem2);
-        sleep(2);
+        sleep(PAUSE);
 
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         addr.sin_family = AF_INET;
@@ -117,7 +119,7 @@ int main() {
 
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         sem_post(sem2);
-        sleep(2);
+        sleep(PAUSE);
         connect(sock, (struct sockaddr *)&addr, sizeof(addr));
         int ret = send(sock, s.c_str(), strlen(s.c_str()), 0);
         cout << "parent sent " << ret << endl;
@@ -127,18 +129,42 @@ int main() {
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         bind(sock, (struct sockaddr *)&addr, sizeof(addr));
         bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
+        close(sock);
         buf[bytes_read] = '\0';
         string sqrB = buf;
         cout << "sqr(b) = " << sqrB << endl;
-     /*   s = "s;" + to_string(b);
-        sem_post(sem2);
+        s = "+;" + sqrA + ";" + sqrB;
 
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        sem_post(sem2);
+        sleep(PAUSE);
         connect(sock, (struct sockaddr *)&addr, sizeof(addr));
         send(sock, s.c_str(), strlen(s.c_str()), 0);
         close(sock);
 
         sem_wait(sem);
-*/
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+        bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
+        close(sock);
+        buf[bytes_read] = '\0';
+        cout << "sqr(a) + sqr(b) = " << buf << endl;
+        s = "r;" + string(buf);
+
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        sem_post(sem2);
+        sleep(PAUSE);
+        connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+        send(sock, s.c_str(), strlen(s.c_str()), 0);
+        close(sock);
+
+        sem_wait(sem);
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+        bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
+        close(sock);
+        buf[bytes_read] = '\0';
+        cout << "sqrt [ sqr(a) + sqr(b) ] = " << buf << endl;
 
         kill(p, 9);
         shmctl (shmid, IPC_RMID, 0);
@@ -172,8 +198,8 @@ int main() {
             double res = calculate(buf);
 
             sem_post(sem);
-            sleep(2);
             sock = socket(AF_INET, SOCK_DGRAM, 0);
+            sleep(PAUSE);
             int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
             cout << "kid connected: " << ret << endl;
             const char *result = to_string(res).c_str();
