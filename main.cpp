@@ -30,25 +30,6 @@ int sock;
 struct sockaddr_in addr;
 int bytes_read, total = 0;
 
-int main3() {
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
-    char buf[BUFSIZE];
-    while(1) {
-        int socket = accept(sock, (struct sockaddr *)&addr, (socklen_t *) sizeof(addr));
-        bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
-        total = total + bytes_read;
-        buf[bytes_read] = '\0';
-        fprintf(stdout, buf);fflush(stdout);
-        if (total>BUFSIZE) break;
-    }
-    printf("\nTotal %d bytes received", total);
-    return 0;
-}
-
 double calculate(char* par) {
     string input = string(par);
     char op = input[0];
@@ -76,16 +57,7 @@ double calculate(char* par) {
     }
 }
 
-int main22() {
-    char *s = (char *) "+;121;-55.7";
-
-    printf("result %f\n", calculate(s));
-    return 0;
-}
-
 int main() {
-    char *e[]={"",""};
-
     /* initialize a shared variable in shared memory */
     shmkey = ftok ("/dev/null", 5);       /* valid directory name and a number */
     printf ("shmkey for p = %d\n", shmkey);
@@ -97,7 +69,7 @@ int main() {
 
     sem = sem_open ("pSem", O_CREAT | O_EXCL, 0644, 1);
     sem2 = sem_open ("pSem2", O_CREAT | O_EXCL, 0644, 0);
-    /* name of semaphore is "pSem", semaphore is reached using this name */
+
     sem_unlink ("pSem");
     sem_unlink ("pSem2");
     /* unlink prevents the semaphore existing forever */
@@ -108,10 +80,10 @@ int main() {
     sem_init(&empty, 1, 1); // Установлен в 1
     sem_init(&full, 1, 0); // Установлен в 0
 
+    //char *e[]={"",""};
     p = fork(); /*Копирование адресного пространства и процесса*/
     if (p) {
         /* Родитель получает PID ребенка*/
-        printf("Parent proc...\n");
         //wait(&q); /* Ждать завершения потомков */
         sem_wait(sem);
         char buf[BUFSIZE];
@@ -123,76 +95,90 @@ int main() {
 
         string s = "s;" + to_string(a);
         sem_post(sem2);
-
-        //send
+        sleep(2);
 
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         addr.sin_family = AF_INET;
         addr.sin_port = htons(PORT);
         addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-        cout << "parent socket: " << sock << endl;
-        int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
-        cout << "parent connected: " << ret << endl;
+        connect(sock, (struct sockaddr *)&addr, sizeof(addr));
         send(sock, s.c_str(), strlen(s.c_str()), 0);
         close(sock);
 
         sem_wait(sem);
-        cout << "parent is up to recieve" << endl;
-      //  bind(sock, (struct sockaddr *)&addr, sizeof(addr));
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         bind(sock, (struct sockaddr *)&addr, sizeof(addr));
         bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
-        cout << "parent recieved " << bytes_read << endl;
+        close(sock);
         buf[bytes_read] = '\0';
-        cout << "parent got result " << buf << endl;
+        string sqrA = buf;
+        cout << "sqr(a) = " << sqrA << endl;
+        s = "s;" + to_string(b);
 
-      //  cout << "sqr(a) = " << result << endl;
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        sem_post(sem2);
+        sleep(2);
+        connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+        int ret = send(sock, s.c_str(), strlen(s.c_str()), 0);
+        cout << "parent sent " << ret << endl;
+        close(sock);
 
-        sleep(5);
-       // sem_post(sem2);
+        sem_wait(sem);
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+        bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
+        buf[bytes_read] = '\0';
+        string sqrB = buf;
+        cout << "sqr(b) = " << sqrB << endl;
+     /*   s = "s;" + to_string(b);
+        sem_post(sem2);
+
+        connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+        send(sock, s.c_str(), strlen(s.c_str()), 0);
+        close(sock);
+
+        sem_wait(sem);
+*/
+
         kill(p, 9);
-        printf("Parent ends");
-        //shmdt (p);
         shmctl (shmid, IPC_RMID, 0);
 
         /* cleanup semaphores */
         sem_destroy (sem);
+        sem_destroy (sem2);
     }
     else
 /* Ребенок получает 0 */
     {
         //   execv("./hello", e); /* Ребенок замещает себя другой программой*/
         printf("Kid proc...\n");
-        sock = socket(AF_INET, SOCK_DGRAM, 0);
         addr.sin_family = AF_INET;
         addr.sin_port = htons(PORT);
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
         char buf[BUFSIZE];
         while (1) {
-            sem_wait(sem2);
+            sock = socket(AF_INET, SOCK_DGRAM, 0);
+            bind(sock, (struct sockaddr *)&addr, sizeof(addr));
 
-            cout << "server in while" << endl;
-           // int socket = accept(sock, (struct sockaddr *)&addr, (socklen_t *) sizeof(addr));
-            //cout << "accepted: " << socket << endl;
+            sem_wait(sem2);
+            cout << "kid got sem2 " << endl;
             bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
-            cout << "read: " << socket << endl;
-         //   total = total + bytes_read;
+            cout << "kid read " << bytes_read << endl;
+            close(sock);
             buf[bytes_read] = '\0';
            // fprintf(stdout, buf);fflush(stdout);
          //   if (total>BUFSIZE) break;
-            cout << "buf: " << buf << endl;
           //  printf("\nTotal %d bytes received\n", total);
             double res = calculate(buf);
-            cout << "res: " << calculate(buf) << endl;
-            close(sock);
 
             sem_post(sem);
+            sleep(2);
             sock = socket(AF_INET, SOCK_DGRAM, 0);
             int ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
             cout << "kid connected: " << ret << endl;
             const char *result = to_string(res).c_str();
             ret = send(sock, result, strlen(result), 0);
+            close(sock);
             cout << "kid sent result, " << ret << endl;
         }
         printf("Kid ends");
