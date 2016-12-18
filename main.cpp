@@ -20,7 +20,7 @@ using namespace std;
 
 #define PAUSE 2
 
-pid_t p, q;
+pid_t p;
 
 sem_t empty, full;
 
@@ -30,7 +30,7 @@ sem_t *sem, *sem2;
 
 int sock;
 struct sockaddr_in addr;
-int bytes_read, total = 0;
+int bytes_read;
 
 double calculate(char* par) {
     string input = string(par);
@@ -152,9 +152,8 @@ int main() {
             bind(sock, (struct sockaddr *)&addr, sizeof(addr));
 
             sem_wait(sem2);
-            cout << "kid got sem2 " << endl;
             bytes_read = recvfrom(sock, buf, BUFSIZE, 0, NULL, NULL);
-            cout << "kid read " << bytes_read << endl;
+            cout << "kid read " << bytes_read << " bytes" << endl;
             close(sock);
             buf[bytes_read] = '\0';
             double res = calculate(buf);
@@ -167,7 +166,7 @@ int main() {
             const char *result = to_string(res).c_str();
             ret = send(sock, result, strlen(result), 0);
             close(sock);
-            cout << "kid sent result, " << ret << endl;
+            cout << "kid sent result, " << ret << " bytes" << endl;
         }
     }
 
