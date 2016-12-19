@@ -22,10 +22,6 @@ using namespace std;
 
 pid_t p;
 
-sem_t empty, full;
-
-key_t shmkey;                 /*      shared memory key       */
-int shmid;                    /*      shared memory id        */
 sem_t *sem, *sem2;
 
 int sock;
@@ -76,14 +72,6 @@ void perform_action(char* buf, string action) {
 }
 
 int main() {
-    /* initialize a shared variable in shared memory */
-    shmkey = ftok ("/dev/null", 5);       /* valid directory name and a number */
-    printf ("shmkey for p = %d\n", shmkey);
-    shmid = shmget (shmkey, sizeof (int), 0644 | IPC_CREAT);
-    if (shmid < 0){                           /* shared memory error check */
-        perror ("shmget\n");
-        exit (1);
-    }
 
     sem = sem_open ("pSem", O_CREAT | O_EXCL, 0644, 1);
     sem2 = sem_open ("pSem2", O_CREAT | O_EXCL, 0644, 0);
@@ -93,10 +81,6 @@ int main() {
     /* unlink prevents the semaphore existing forever */
     /* if a crash occurs during the execution         */
     printf ("semaphores initialized.\n\n");
-
-
-    sem_init(&empty, 1, 1); // Установлен в 1
-    sem_init(&full, 1, 0); // Установлен в 0
 
     //char *e[]={"",""};
     p = fork(); /*Копирование адресного пространства и процесса*/
@@ -134,7 +118,6 @@ int main() {
         cout << "sqrt [ sqr(a) + sqr(b) ] = " << buf << endl;
 
         kill(p, 9);
-        shmctl (shmid, IPC_RMID, 0);
 
         /* cleanup semaphores */
         sem_destroy (sem);
